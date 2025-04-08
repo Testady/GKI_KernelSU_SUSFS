@@ -104,8 +104,8 @@ jobs:
         run: |
           if [ "${{ inputs.kernelsu_variant }}" == "SukiSU" ]; then
             echo "This is the SukiSU variant"
-            REPO_URL="https://github.com/Testady/KernelSU.git"
-            REPO_URL2="Testady/KernelSU"
+            REPO_URL="https://github.com/Testady/SukiSU-Ultra.git"
+            REPO_URL2="Testady/SukiSU-Ultra"
           else
             echo "Unknown variant"
           fi
