@@ -257,10 +257,10 @@ jobs:
             patch -p1 -F 3 < new_hooks.patch
           fi
 
-          #if [ "${{ inputs.kernel_version }}" != "5.10" ]; then
-          #  cp ../../SukiSU_patch/other/lz4k_patch/${{ inputs.kernel_version }}/lz4kd.patch ./
-          #  patch -p1 -F 3 < lz4kd.patch || true
-          #fi
+          if [ "${{ inputs.kernel_version }}" != "5.10" ]; then
+            cp ../../SukiSU_patch/other/lz4k_patch/${{ inputs.kernel_version }}/lz4kd.patch ./
+            patch -p1 -F 3 < lz4kd.patch || true
+          fi
           
           #if ! grep -q '^CONFIG_ZRAM=m' ./arch/arm64/configs/gki_defconfig; then
           #  cp -r -f ../../SukiSU_patch/other/lz4k_patch/5.10/drivers/block/zram/* ./drivers/block/zram/
@@ -338,8 +338,10 @@ jobs:
           echo "CONFIG_CRYPTO_LZ4K=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KERNEL_LZ4KD=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_CRYPTO_LZ4KD=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_CRYPTO_LZ4HC=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_CRYPTO_842=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CRYPTO_LZ4HC=n" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CRYPTO_842=n" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KERNEL_GZIP=n" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KERNEL_LZ4=n" >> ./common/arch/arm64/configs/gki_defconfig
           
           # Add additional tmpfs config setting
           echo "CONFIG_TMPFS_XATTR=y" >> ./common/arch/arm64/configs/gki_defconfig
