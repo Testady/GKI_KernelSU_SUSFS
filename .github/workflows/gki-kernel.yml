@@ -142,7 +142,7 @@ jobs:
           # Clone repositories using the branch names
           git clone https://github.com/WildPlusKernel/AnyKernel3.git -b "gki-2.0"
           git clone https://gitlab.com/simonpunk/susfs4ksu.git -b "$SUSFS_BRANCH"
-          git clone https://github.com/Testady/SukiSU_patch.git
+          git clone https://github.com/ShirkNeko/SukiSU_patch.git
 
       - name: Set CONFIG Environment Variable
         run: |
@@ -212,7 +212,7 @@ jobs:
           cd "$CONFIG"
           if [ "${{ inputs.kernelsu_variant }}" == "SukiSU" ]; then
             echo "Adding KernelSU SukiSU..."
-            curl -LSs "https://raw.githubusercontent.com/Testady/SukiSU-Ultra/main/kernel/setup.sh" | bash $BRANCH
+            curl -LSs "https://raw.githubusercontent.com/ShirkNeko/SukiSU-Ultra/main/kernel/setup.sh" | bash $BRANCH
           fi
           
       - name: Apply SUSFS Patches for KernelSU Variants
@@ -257,6 +257,16 @@ jobs:
             patch -p1 -F 3 < new_hooks.patch
           fi
 
+          #if [ "${{ inputs.kernel_version }}" != "5.10" ]; then
+          #  cp ../../SukiSU_patch/other/lz4k_patch/${{ inputs.kernel_version }}/lz4kd.patch ./
+          #  patch -p1 -F 3 < lz4kd.patch || true
+          #fi
+          
+          #if ! grep -q '^CONFIG_ZRAM=m' ./arch/arm64/configs/gki_defconfig; then
+          #  cp -r -f ../../SukiSU_patch/other/lz4k_patch/5.10/drivers/block/zram/* ./drivers/block/zram/
+          #  cp -r -f ../../SukiSU_patch/other/lz4k_patch/5.10/lib/* ./lib/
+          #  cp -r -f ../../SukiSU_patch/other/lz4k_patch/5.10/crypto/* ./crypto/
+          #fi
       - name: Apply Hide Stuff Patches
         run: |
           echo "Changing to configuration directory: $CONFIG..."
@@ -296,13 +306,41 @@ jobs:
           echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> ./common/arch/arm64/configs/gki_defconfig
 
+          #if ! grep -q '^CONFIG_ZRAM=m' ./common/arch/arm64/configs/gki_defconfig; then
+          #echo "CONFIG_ZRAM=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #echo "CONFIG_ZRAM_WRITEBACK=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #echo "CONFIG_CRYPTO_LZO=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #echo "CONFIG_ZRAM_DEF_COMP_LZ4KD=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #fi
+
+          #if [ "${{ inputs.kernel_version }}" != "6.6" ] && [ "${{ inputs.kernel_version }}" != "5.10" ]; then
+          #  sed -i 's/CONFIG_ZRAM=m/CONFIG_ZRAM=y/g' ./common/arch/arm64/configs/gki_defconfig
+          #  sed -i 's/CONFIG_ZSMALLOC=m/CONFIG_ZSMALLOC=y/g' ./common/arch/arm64/configs/gki_defconfig
+          #  sed -i 's/CONFIG_MODULE_SIG=y/CONFIG_MODULE_SIG=n/g' ./common/arch/arm64/configs/gki_defconfig
+          #  echo "CONFIG_ZRAM_WRITEBACK=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #  echo "CONFIG_CRYPTO_LZ4K=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #  echo "CONFIG_CRYPTO_LZ4KD=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #  echo "CONFIG_CRYPTO_LZ4HC=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #  echo "CONFIG_CRYPTO_842=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #fi
+
+          #if [ "${{ inputs.kernel_version }}" = "6.6" ]; then
+          #  echo "CONFIG_ZSMALLOC=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #  echo "CONFIG_ZRAM_WRITEBACK=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #  sed -i 's/CONFIG_ZRAM=m/CONFIG_ZRAM=y/g' ./common/arch/arm64/configs/gki_defconfig
+          #  echo "CONFIG_ZRAM_WRITEBACK=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #  echo "CONFIG_CRYPTO_LZ4K=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #  echo "CONFIG_CRYPTO_LZ4KD=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #  echo "CONFIG_CRYPTO_LZ4HC=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #  echo "CONFIG_CRYPTO_842=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #fi
+
           echo "CONFIG_KERNEL_LZ4KD=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_CRYPTO_LZ4KD=y" >> ./common/arch/arm64/configs/gki_defconfig
 
     # 禁用其他压缩算法（可选）
           echo "CONFIG_KERNEL_GZIP=n" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KERNEL_LZ4=n" >> ./common/arch/arm64/configs/gki_defconfig
-              
           # Add additional tmpfs config setting
           echo "CONFIG_TMPFS_XATTR=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_TMPFS_POSIX_ACL=y" >> ./common/arch/arm64/configs/gki_defconfig
@@ -376,15 +414,14 @@ jobs:
 
       #- name: Patch Image File
       #  run: |
-       #   echo "Patching Image file..."
-        #  cd "$CONFIG/out/${{ inputs.android_version }}-${{ inputs.kernel_version }}/dist"
+      #    echo "Patching Image file..."
+      #    cd "$CONFIG/out/${{ inputs.android_version }}-${{ inputs.kernel_version }}/dist"
           
-        #  curl -LSs "https://raw.githubusercontent.com/ShirkNeko/SukiSU_patch/refs/heads/main/kpm/patch_linux" -o patch
-       #   chmod 777 patch
-       #   ./patch
-       #   rm -rf Image
-       #   mv oImage Image
-            
+      #    curl -LSs "https://raw.githubusercontent.com/ShirkNeko/SukiSU_patch/refs/heads/main/kpm/patch_linux" -o patch
+      #    chmod 777 patch
+      #    ./patch
+      #    rm -rf Image
+      #    mv oImage Image
             
       - name: Create Bootimgs Folder and Copy Images
         if: ${{ inputs.android_version == 'android12' || inputs.android_version == 'android13' }}
