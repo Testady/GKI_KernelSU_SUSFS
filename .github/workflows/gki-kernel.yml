@@ -142,7 +142,7 @@ jobs:
           # Clone repositories using the branch names
           git clone https://github.com/WildPlusKernel/AnyKernel3.git -b "gki-2.0"
           git clone https://gitlab.com/simonpunk/susfs4ksu.git -b "$SUSFS_BRANCH"
-          git clone https://github.com//SukiSU_patch.git
+          git clone https://github.com/Testady/SukiSU_patch.git
 
       - name: Set CONFIG Environment Variable
         run: |
@@ -212,7 +212,7 @@ jobs:
           cd "$CONFIG"
           if [ "${{ inputs.kernelsu_variant }}" == "SukiSU" ]; then
             echo "Adding KernelSU SukiSU..."
-            curl -LSs "https://raw.githubusercontent.com//SukiSU-Ultra/main/kernel/setup.sh" | bash $BRANCH
+            curl -LSs "https://raw.githubusercontent.com/Testady/SukiSU-Ultra/main/kernel/setup.sh" | bash $BRANCH
           fi
           
       - name: Apply SUSFS Patches for KernelSU Variants
@@ -417,7 +417,7 @@ jobs:
       #    echo "Patching Image file..."
       #    cd "$CONFIG/out/${{ inputs.android_version }}-${{ inputs.kernel_version }}/dist"
           
-      #    curl -LSs "https://raw.githubusercontent.com/SukiSU_patch/refs/heads/main/kpm/patch_linux" -o patch
+      #    curl -LSs "https://raw.githubusercontent.com/Testady/SukiSU_patch/refs/heads/main/kpm/patch_linux" -o patch
       #    chmod 777 patch
       #    ./patch
       #    rm -rf Image
