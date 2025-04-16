@@ -37,7 +37,7 @@ on:
 
 jobs:
   build-kernel-kernelsu-susfs:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     env:
       CCACHE_COMPILERCHECK: "%compiler% -dumpmachine; %compiler% -dumpversion"
       CCACHE_NOHASHDIR: "true"
@@ -67,7 +67,7 @@ jobs:
 
       # Install ccache
       - name: Install ccache
-        run: sudo apt update && sudo apt install -y ccache
+        run: sudo apt update && sudo apt upgrade -y && sudo apt install -y ccache python3 git curl
 
       - name: Set up ccache
         run: |
@@ -117,8 +117,8 @@ jobs:
             echo "$BOOT_SIGN_KEY" > ./kernel-build-tools/linux-x86/share/avb/testkey_rsa2048.pem
             echo "BOOT_SIGN_KEY_PATH=$GITHUB_WORKSPACE/kernel-build-tools/linux-x86/share/avb/testkey_rsa2048.pem" >> $GITHUB_ENV
           else
-            echo "BOOT_SIGN_KEY is not set. Exiting..."
-            exit 1
+            openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 > ./kernel-build-tools/linux-x86/share/avb/testkey_rsa2048.pem
+            echo "BOOT_SIGN_KEY_PATH=$GITHUB_WORKSPACE/kernel-build-tools/linux-x86/share/avb/testkey_rsa2048.pem" >> $GITHUB_ENV
           fi
 
       - name: Install Repo
@@ -140,9 +140,11 @@ jobs:
           echo "Using branch for SUSFS: $SUSFS_BRANCH"
 
           # Clone repositories using the branch names
-          git clone https://github.com/WildPlusKernel/AnyKernel3.git -b "gki-2.0"
           git clone https://gitlab.com/simonpunk/susfs4ksu.git -b "$SUSFS_BRANCH"
           git clone https://github.com/Testady/SukiSU_patch.git
+          cd SukiSU_patch
+          cp -r AnyKernel3 ../
+          cd ..
 
       - name: Set CONFIG Environment Variable
         run: |
@@ -178,20 +180,20 @@ jobs:
           $REPO --version
           $REPO --trace sync -c -j$(nproc --all) --no-tags --fail-fast
 
-      - name: Copy file
-        run: |
-          cp -r $CONFIG source-clean-$CONFIG
+      #- name: Copy file
+      #  run: |
+      #    cp -r $CONFIG source-clean-$CONFIG
 
-      - name: Upload artifact
-        if: ${{ inputs.make_release == false }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: source-clean-${{ env.CONFIG }}
-          path: source-clean-${{ env.CONFIG }}
+      #- name: Upload artifact
+      #  if: ${{ inputs.make_release == false }}
+      #  uses: actions/upload-artifact@v4
+      #  with:
+      #    name: source-clean-${{ env.CONFIG }}
+      #    path: source-clean-${{ env.CONFIG }}
 
-      - name: Remove file
-        run: |
-          rm -rf source-clean-$CONFIG
+      #- name: Remove file
+      #  run: |
+      #    rm -rf source-clean-$CONFIG
 
       - name: Determine the branch for KernelSU
         run: |
@@ -226,6 +228,7 @@ jobs:
           cp ../susfs4ksu/kernel_patches/50_add_susfs_in_gki-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch ./common/
           cp ../susfs4ksu/kernel_patches/fs/* ./common/fs/
           cp ../susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
+          
           #lz4k
           cp -r ../SukiSU_patch/other/lz4k/include/linux/* ./common/include/linux
           cp -r ../SukiSU_patch/other/lz4k/lib/* ./common/lib
@@ -253,20 +256,13 @@ jobs:
 
           if [ "${{ inputs.kernelsu_variant }}" == "SukiSU" ]; then
             echo "Applying hooks for SukiSU..."
-            cp ../../SukiSU_patch/hooks/new_hooks.patch ./
-            patch -p1 -F 3 < new_hooks.patch
+            cp ../../SukiSU_patch/hooks/syscall_hooks.patch ./
+            patch -p1 -F 3 < syscall_hooks.patch
           fi
 
-          if [ "${{ inputs.kernel_version }}" != "5.10" ]; then
             cp ../../SukiSU_patch/other/lz4k_patch/${{ inputs.kernel_version }}/lz4kd.patch ./
             patch -p1 -F 3 < lz4kd.patch || true
-          fi
           
-          #if ! grep -q '^CONFIG_ZRAM=m' ./arch/arm64/configs/gki_defconfig; then
-          #  cp -r -f ../../SukiSU_patch/other/lz4k_patch/5.10/drivers/block/zram/* ./drivers/block/zram/
-          #  cp -r -f ../../SukiSU_patch/other/lz4k_patch/5.10/lib/* ./lib/
-          #  cp -r -f ../../SukiSU_patch/other/lz4k_patch/5.10/crypto/* ./crypto/
-          #fi
       - name: Apply Hide Stuff Patches
         run: |
           echo "Changing to configuration directory: $CONFIG..."
@@ -306,42 +302,34 @@ jobs:
           echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> ./common/arch/arm64/configs/gki_defconfig
 
-          #if ! grep -q '^CONFIG_ZRAM=m' ./common/arch/arm64/configs/gki_defconfig; then
-          #echo "CONFIG_ZRAM=y" >> ./common/arch/arm64/configs/gki_defconfig
-          #echo "CONFIG_ZRAM_WRITEBACK=y" >> ./common/arch/arm64/configs/gki_defconfig
-          #echo "CONFIG_CRYPTO_LZO=y" >> ./common/arch/arm64/configs/gki_defconfig
-          #echo "CONFIG_ZRAM_DEF_COMP_LZ4KD=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #if [ "${{ inputs.kernel_version }}" = "5.10" ]; then
+          #  echo "CONFIG_ZSMALLOC=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #  echo "CONFIG_ZRAM=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #  echo "CONFIG_MODULE_SIG=n" >> ./common/arch/arm64/configs/gki_defconfig
+          #  echo "CONFIG_CRYPTO_LZO=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #  echo "CONFIG_ZRAM_DEF_COMP_LZ4KD=y" >> ./common/arch/arm64/configs/gki_defconfig
           #fi
 
           #if [ "${{ inputs.kernel_version }}" != "6.6" ] && [ "${{ inputs.kernel_version }}" != "5.10" ]; then
-          #  sed -i 's/CONFIG_ZRAM=m/CONFIG_ZRAM=y/g' ./common/arch/arm64/configs/gki_defconfig
-          #  sed -i 's/CONFIG_ZSMALLOC=m/CONFIG_ZSMALLOC=y/g' ./common/arch/arm64/configs/gki_defconfig
           #  sed -i 's/CONFIG_MODULE_SIG=y/CONFIG_MODULE_SIG=n/g' ./common/arch/arm64/configs/gki_defconfig
-          #  echo "CONFIG_ZRAM_WRITEBACK=y" >> ./common/arch/arm64/configs/gki_defconfig
-          #  echo "CONFIG_CRYPTO_LZ4K=y" >> ./common/arch/arm64/configs/gki_defconfig
-          #  echo "CONFIG_CRYPTO_LZ4KD=y" >> ./common/arch/arm64/configs/gki_defconfig
-          #  echo "CONFIG_CRYPTO_LZ4HC=y" >> ./common/arch/arm64/configs/gki_defconfig
-          #  echo "CONFIG_CRYPTO_842=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #  sed -i 's/CONFIG_ZSMALLOC=m/CONFIG_ZSMALLOC=y/g' ./common/arch/arm64/configs/gki_defconfig
+          #  sed -i 's/CONFIG_ZRAM=m/CONFIG_ZRAM=y/g' ./common/arch/arm64/configs/gki_defconfig
           #fi
 
           #if [ "${{ inputs.kernel_version }}" = "6.6" ]; then
           #  echo "CONFIG_ZSMALLOC=y" >> ./common/arch/arm64/configs/gki_defconfig
-          #  echo "CONFIG_ZRAM_WRITEBACK=y" >> ./common/arch/arm64/configs/gki_defconfig
           #  sed -i 's/CONFIG_ZRAM=m/CONFIG_ZRAM=y/g' ./common/arch/arm64/configs/gki_defconfig
-          #  echo "CONFIG_ZRAM_WRITEBACK=y" >> ./common/arch/arm64/configs/gki_defconfig
-          #  echo "CONFIG_CRYPTO_LZ4K=y" >> ./common/arch/arm64/configs/gki_defconfig
-          #  echo "CONFIG_CRYPTO_LZ4KD=y" >> ./common/arch/arm64/configs/gki_defconfig
-          #  echo "CONFIG_CRYPTO_LZ4HC=y" >> ./common/arch/arm64/configs/gki_defconfig
-          #  echo "CONFIG_CRYPTO_842=y" >> ./common/arch/arm64/configs/gki_defconfig
           #fi
 
+          #if grep -q "CONFIG_ZSMALLOC=y" ./common/arch/arm64/configs/gki_defconfig && grep -q "CONFIG_ZRAM=y" ./common/arch/arm64/configs/gki_defconfig; then
+          #  echo "CONFIG_CRYPTO_LZ4HC=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #  echo "CONFIG_CRYPTO_LZ4K=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #  echo "CONFIG_CRYPTO_LZ4KD=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #  echo "CONFIG_CRYPTO_842=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #fi
           echo "CONFIG_CRYPTO_LZ4K=n" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KERNEL_LZ4KD=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_CRYPTO_LZ4KD=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_CRYPTO_LZ4HC=n" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_CRYPTO_842=n" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KERNEL_GZIP=n" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KERNEL_LZ4=n" >> ./common/arch/arm64/configs/gki_defconfig
           
           # Add additional tmpfs config setting
           echo "CONFIG_TMPFS_XATTR=y" >> ./common/arch/arm64/configs/gki_defconfig
@@ -360,7 +348,7 @@ jobs:
           echo "Changing to configuration directory: $CONFIG..."
           cd "$CONFIG"
 
-          sed -i '$s|echo "\$res"|echo "\$res-huabaiya"|' ./common/scripts/setlocalversion
+          sed -i '$s|echo "\$res"|echo "\$res"|' ./common/scripts/setlocalversion
 
           #if [ "${{ inputs.kernel_version }}" != "5.10" ]; then
           #sed -i 'd' ./common/android/gki_aarch64_modules
@@ -377,24 +365,24 @@ jobs:
           else
             rm -rf ./common/android/abi_gki_protected_exports_*
             sed -i "/stable_scmversion_cmd/s/-maybe-dirty//g" ./build/kernel/kleaf/impl/stamp.bzl
-            sed -E -i '/^CONFIG_LOCALVERSION=/ s/(.*)"$/\1-huabaiya"/' ./common/arch/arm64/configs/gki_defconfig
+            sed -E -i '/^CONFIG_LOCALVERSION=/ s/(.*)"$/\1"/' ./common/arch/arm64/configs/gki_defconfig
             #tools/bazel build --config=fast --lto=${{ inputs.lto_type }} //common:kernel_aarch64_dist
           fi
 
-      - name: Copy file
-        run: |
-          cp -r $CONFIG source-patched-$CONFIG
+      #- name: Copy file
+      #  run: |
+      #    cp -r $CONFIG source-patched-$CONFIG
 
-      - name: Upload artifact
-        if: ${{ inputs.make_release == false }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: source-patched-${{ env.CONFIG }}
-          path: source-patched-${{ env.CONFIG }}
+      #- name: Upload artifact
+      #  if: ${{ inputs.make_release == false }}
+      #  uses: actions/upload-artifact@v4
+      #  with:
+      #    name: source-patched-${{ env.CONFIG }}
+      #    path: source-patched-${{ env.CONFIG }}
 
-      - name: Remove file
-        run: |
-          rm -rf source-patched-$CONFIG
+      #- name: Remove file
+      #  run: |
+      #    rm -rf source-patched-$CONFIG
 
       - name: Build with retry
         uses: nick-fields/retry@v3
@@ -414,16 +402,33 @@ jobs:
             fi
             ccache --show-stats
 
-      #- name: Patch Image File
-      #  run: |
-      #    echo "Patching Image file..."
-      #    cd "$CONFIG/out/${{ inputs.android_version }}-${{ inputs.kernel_version }}/dist"
-          
-      #    curl -LSs "https://raw.githubusercontent.com/Testady/SukiSU_patch/refs/heads/main/kpm/patch_linux" -o patch
-      #    chmod 777 patch
-      #    ./patch
-      #    rm -rf Image
-      #    mv oImage Image
+      - name: Patch Image File A12 & A13
+        if: ${{ inputs.android_version == 'android12' || inputs.android_version == 'android13' }}
+        run: |
+          if [ "${{ inputs.kernel_version }}" != "6.6" ]; then
+            echo "Patching Image file..."
+            cd "$CONFIG/out/${{ inputs.android_version }}-${{ inputs.kernel_version }}/dist"
+            curl -LSs "https://raw.githubusercontent.com/Testady/SukiSU_patch/refs/heads/main/kpm/patch_linux" -o patch
+            chmod 777 patch
+            ./patch
+            rm -rf Image
+            mv oImage Image
+            cd ../../../..
+          fi
+
+      - name: Patch Image File A14 & A15
+        if: ${{ inputs.android_version == 'android14' || inputs.android_version == 'android15' }}
+        run: |
+          if [ "${{ inputs.kernel_version }}" != "6.6" ]; then
+            echo "Patching Image file..."
+            cd "$CONFIG/bazel-bin/common/kernel_aarch64/"
+            curl -LSs "https://raw.githubusercontent.com/Testady/SukiSU_patch/refs/heads/main/kpm/patch_linux" -o patch
+            chmod 777 patch
+            ./patch
+            rm -rf Image
+            mv oImage Image
+            cd ../../..
+          fi
             
       - name: Create Bootimgs Folder and Copy Images
         if: ${{ inputs.android_version == 'android12' || inputs.android_version == 'android13' }}
@@ -558,3 +563,4 @@ jobs:
           name: kernel-${{ env.CONFIG }}
           path: |
             *.zip
+            *.img
