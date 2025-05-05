@@ -12,9 +12,7 @@ on:
         required: true
         type: choice
         options:
-          - Official
           - Next
-          - MKSU
           - SukiSU
         default: SukiSU
       kernelsu_branch:
