@@ -319,13 +319,13 @@ jobs:
           echo "写入LZ4KD&ZSTDN config依赖"
           CONFIG_FILE="$CONFIG/common/arch/arm64/configs/gki_defconfig"
           # 强制覆盖ZRAM默认压缩算法
-          sed -i '/CONFIG_ZRAM_DEF_COMP/d' "$CONFIG_FILE"  # 删除旧配置
-          echo "CONFIG_ZRAM_DEF_COMP_LZ4KD=y" >> "$CONFIG_FILE"
+          #sed -i '/CONFIG_ZRAM_DEF_COMP/d' "$CONFIG_FILE"  # 删除旧配置
+          #echo "CONFIG_ZRAM_DEF_COMP_LZ4KD=y" >> "$CONFIG_FILE"
            # 确保所有相关CRYPTO配置启用
-          echo "CONFIG_CRYPTO_LZ4=y" >> "$CONFIG_FILE"
-          echo "CONFIG_CRYPTO_LZ4K=y" >> "$CONFIG_FILE"
-          echo "CONFIG_CRYPTO_LZ4KD=y" >> "$CONFIG_FILE"
-          echo "CONFIG_CRYPTO_LZO=n" >> "$CONFIG_FILE"  # 禁用LZO
+          #echo "CONFIG_CRYPTO_LZ4=y" >> "$CONFIG_FILE"
+          #echo "CONFIG_CRYPTO_LZ4K=y" >> "$CONFIG_FILE"
+          #echo "CONFIG_CRYPTO_LZ4KD=y" >> "$CONFIG_FILE"
+          #echo "CONFIG_CRYPTO_LZO=n" >> "$CONFIG_FILE"  # 禁用LZO
 
           if [ "${{ inputs.kernel_version }}" = "5.10" ]; then
             echo "CONFIG_ZSMALLOC=y" >> "$CONFIG_FILE"
