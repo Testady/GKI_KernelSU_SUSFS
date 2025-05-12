@@ -50,7 +50,7 @@ jobs:
       kernelsu_branch: ${{ inputs.kernelsu_branch }}
       kernelsu_branch_other: ${{ inputs.kernelsu_branch_other }}
       
-  trigger-release:
+    trigger-release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
