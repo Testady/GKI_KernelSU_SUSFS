@@ -7,41 +7,16 @@ permissions:
 on:
   workflow_dispatch:
     inputs:
-      build_a12_510:
-        description: 'Build a12 5.10?'
-        required: true
-        type: boolean
-        default: true
-      build_a13_510:
-        description: 'Build a13 5.10?'
-        required: true
-        type: boolean
-        default: true
-      build_a13_515:
-        description: 'Build a13 5.15?'
-        required: true
-        type: boolean
-        default: true
-      build_a14_515:
-        description: 'Build a14 5.15?'
-        required: true
-        type: boolean
-        default: true
-      build_a14_61:
-        description: 'Build a14 6.1?'
-        required: true
-        type: boolean
-        default: true
-      build_a15_66:
+        build_a15_66:
         description: 'Build a15  6.6?'
         required: true
         type: boolean
         default: true
       make_release:
         description: 'Do you want to create a release?'
-        required: true
+        required: false
         type: boolean
-        default: true
+        default: false
       kernelsu_variant:
         description: "Choose KernelSU"
         required: true
@@ -65,57 +40,7 @@ on:
         default: ""  # Default is empty, but can be filled in if 'Other' is selected
 
 jobs:
-  build-kernel-a12-5-10:
-    if: ${{ inputs.build_a12_510 }}
-    uses: ./.github/workflows/kernel-a12-5.10.yml
-    secrets: inherit
-    with:
-      make_release: ${{ inputs.make_release }}
-      kernelsu_variant: ${{ inputs.kernelsu_variant }}
-      kernelsu_branch: ${{ inputs.kernelsu_branch }}
-      kernelsu_branch_other: ${{ inputs.kernelsu_branch_other }}
-
-  build-kernel-a13-5-10:
-    if: ${{ inputs.build_a13_510 }}
-    uses: ./.github/workflows/kernel-a13-5.10.yml
-    secrets: inherit
-    with:
-      make_release: ${{ inputs.make_release }}
-      kernelsu_variant: ${{ inputs.kernelsu_variant }}
-      kernelsu_branch: ${{ inputs.kernelsu_branch }}
-      kernelsu_branch_other: ${{ inputs.kernelsu_branch_other }}
-
-  build-kernel-a13-5-15:
-    if: ${{ inputs.build_a13_515 }}
-    uses: ./.github/workflows/kernel-a13-5.15.yml
-    secrets: inherit
-    with:
-      make_release: ${{ inputs.make_release }}
-      kernelsu_variant: ${{ inputs.kernelsu_variant }}
-      kernelsu_branch: ${{ inputs.kernelsu_branch }}
-      kernelsu_branch_other: ${{ inputs.kernelsu_branch_other }}
-
-  build-kernel-a14-5-15:
-    if: ${{ inputs.build_a14_515 }}
-    uses: ./.github/workflows/kernel-a14-5.15.yml
-    secrets: inherit
-    with:
-      make_release: ${{ inputs.make_release }}
-      kernelsu_variant: ${{ inputs.kernelsu_variant }}
-      kernelsu_branch: ${{ inputs.kernelsu_branch }}
-      kernelsu_branch_other: ${{ inputs.kernelsu_branch_other }}
-
-  build-kernel-a14-6-1:
-    if: ${{ inputs.build_a14_61 }}
-    uses: ./.github/workflows/kernel-a14-6.1.yml
-    secrets: inherit
-    with:
-      make_release: ${{ inputs.make_release }}
-      kernelsu_variant: ${{ inputs.kernelsu_variant }}
-      kernelsu_branch: ${{ inputs.kernelsu_branch }}
-      kernelsu_branch_other: ${{ inputs.kernelsu_branch_other }}
-
-  build-kernel-a15-6-6:
+    build-kernel-a15-6-6:
     if: ${{ inputs.build_a15_66 }}
     uses: ./.github/workflows/kernel-a15-6.6.yml
     secrets: inherit
@@ -131,11 +56,6 @@ jobs:
       contents: write
       actions: write
     needs:
-        - build-kernel-a12-5-10
-        - build-kernel-a13-5-10
-        - build-kernel-a13-5-15
-        - build-kernel-a14-5-15
-        - build-kernel-a14-6-1
         - build-kernel-a15-6-6
     if: ${{ inputs.make_release }}
     env:
@@ -350,14 +270,3 @@ jobs:
           echo "GitHub release created with the following files:"
           ls ./downloaded-artifacts/**/*
           
-      - name: Send telegram message on push
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          TELEGRAM_MESSAGE_THREAD_ID: ${{ secrets.TELEGRAM_MESSAGE_THREAD_ID }}
-        run: |
-          curl -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
-            -d "chat_id=$TELEGRAM_CHAT_ID" \
-            -d "message_thread_id=$TELEGRAM_MESSAGE_THREAD_ID" \
-            -d "text=Latest release (最新发布): 
-            https://github.com/ShirkNeko/GKI_KernelSU_SUSFS/releases/tag/${{ env.NEW_TAG }}"
