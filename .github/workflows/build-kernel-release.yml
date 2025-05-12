@@ -40,7 +40,7 @@ on:
         default: ""  # Default is empty, but can be filled in if 'Other' is selected
 
 jobs:
-    build-kernel-a15-6-6:
+  build-kernel-a15-6-6:
     if: ${{ inputs.build_a15_66 }}
     uses: ./.github/workflows/kernel-a15-6.6.yml
     secrets: inherit
@@ -50,7 +50,7 @@ jobs:
       kernelsu_branch: ${{ inputs.kernelsu_branch }}
       kernelsu_branch_other: ${{ inputs.kernelsu_branch_other }}
       
-    trigger-release:
+  trigger-release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
