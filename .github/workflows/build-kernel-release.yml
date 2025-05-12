@@ -7,7 +7,7 @@ permissions:
 on:
   workflow_dispatch:
     inputs:
-        build_a15_66:
+      build_a15_66:
         description: 'Build a15  6.6?'
         required: true
         type: boolean
